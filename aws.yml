@@ -1,0 +1,53 @@
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    aws_access_key: "AKIAIWJUADQP23132CFQ"
+    aws_secret_key: "NCMx885+nNsd2KuprQeZeVsU1arRZc7hqewq2z"
+  tasks:
+      - name: create security group
+        ec2_group:
+          name: dmz
+          description: an example ec2 group
+          region: us-east-2
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+          rules:
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+        register: group
+
+
+      - name: create ec2 instance
+        ec2:
+          aws_access_key: "{{ aws_access_key }}"
+          aws_secret_key: "{{ aws_secret_key }}"
+          image: ami-e81b308d
+          wait: yes
+          instance_type: t2.micro
+          group_id:  "{{ group.group_id }}"
+          region: us-east-2
+          count_tag:
+            Name: dbserver
+          exact_count: 1
+        register: ec2
+
+
+      - name: create RDS instance
+        rds:
+         aws_access_key: "{{ aws_access_key }}"
+         aws_secret_key: "{{ aws_secret_key }}"
+         command: create
+         instance_name: infinitypp
+         db_engine: MySQL
+         size: 20
+         instance_type: db.t2.micro
+         username: mysql_admin
+         password: 1nsecure
+         region: us-east-2
+         tags:
+           Environment: testing
+           Application: cms
+        register: group
